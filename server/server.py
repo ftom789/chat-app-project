@@ -10,9 +10,25 @@ class Server():
         self.sock.bind(("0.0.0.0",88))
         self.sock.listen()
 
-    def Accept(self):
+    def Accept(self,clientFunc):
         client,addr=self.sock.accept()
+        clnt=ClientHandle(client)
+        thread=threading.Thread(target=clientFunc,args=[clnt])
+        self.threads.append((thread,clnt))
         return client,addr
+
+        
+
+    def removeThread(self,client):
+            for i in self.threads:
+                if client is i[1]:
+                    self.threads.remove(i)
+    
+
+class ClientHandle(Server):
+    
+    def __init__(self,sock):
+        self.client=sock
 
     def Send(self,msg):
         size=str(len(msg))
@@ -35,12 +51,12 @@ class Server():
             data=sock.recv(8)
         except:
             print("client closed")
-            self.removeThread(sock)
+            super.removeThread(sock)
             sock.close()
             return False
         if not data:
             print("client closed")
-            self.removeThread(sock)
+            super.removeThread(sock)
             sock.close()
             return False
         size=int(data.decode())
@@ -51,7 +67,7 @@ class Server():
                     data+=sock.recv(1024)
                 except:
                     print("client closed")
-                    self.removeThread(sock)
+                    super.removeThread(sock)
                     sock.close()
                     return False
                 size-=1024
@@ -60,13 +76,13 @@ class Server():
                     data+=sock.recv(size)
                 except:
                     print("client closed")
-                    self.removeThread(sock)
+                    super.removeThread(sock)
                     sock.close()
                     return False
                 size=0
         if not data:
             print("client closed")
-            self.removeThread(sock)
+            super.removeThread(sock)
             sock.close()
             return False
         try:
@@ -75,7 +91,4 @@ class Server():
         finally:
             return data
 
-    def removeThread(self,client):
-        for i in self.threads:
-            if client is i[1]:
-                self.threads.remove(i)
+

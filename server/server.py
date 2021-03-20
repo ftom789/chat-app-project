@@ -3,32 +3,40 @@ import datetime
 import os
 import threading
 
+
+
 class Server():
     def __init__(self):
-        self.threads = []
         self.sock = socket.socket()
         self.sock.bind(("0.0.0.0",88))
         self.sock.listen()
+        self.threads=[]
+        
+        
 
     def Accept(self,clientFunc):
         client,addr=self.sock.accept()
-        clnt=ClientHandle(client)
+        print(f"new client {addr}")
+        clnt=ClientHandle(client,addr,self.threads)
         thread=threading.Thread(target=clientFunc,args=[clnt])
+        thread.start()
         self.threads.append((thread,clnt))
-        return client,addr
 
+    def close(self):
+        self.sock.close()
+       
+
+    
+    
+
+class ClientHandle():
+    
+    def __init__(self,sock,addr,threads=[]):
+        self.sock=sock
+        self.work=True
+        self.threads=threads
+        self.addr=addr
         
-
-    def removeThread(self,client):
-            for i in self.threads:
-                if client is i[1]:
-                    self.threads.remove(i)
-    
-
-class ClientHandle(Server):
-    
-    def __init__(self,sock):
-        self.client=sock
 
     def Send(self,msg):
         size=str(len(msg))
@@ -46,44 +54,37 @@ class ClientHandle(Server):
                 self.sock.send(msg)
                 size=0
 
-    def Recieve(self,sock):
+    def Recieve(self):
         try:
-            data=sock.recv(8)
+            data=self.sock.recv(8)
+            size=int(data.decode())
         except:
-            print("client closed")
-            super.removeThread(sock)
-            sock.close()
+            self.close()
             return False
+
         if not data:
-            print("client closed")
-            super.removeThread(sock)
-            sock.close()
+            self.close()
             return False
-        size=int(data.decode())
+        
+        
         data=bytes()
         while size:
             if (size>1024):
                 try:
-                    data+=sock.recv(1024)
+                    data+=self.sock.recv(1024)
                 except:
-                    print("client closed")
-                    super.removeThread(sock)
-                    sock.close()
+                    self.close()
                     return False
                 size-=1024
             else:
                 try:
-                    data+=sock.recv(size)
+                    data+=self.sock.recv(size)
                 except:
-                    print("client closed")
-                    super.removeThread(sock)
-                    sock.close()
+                    self.close()
                     return False
                 size=0
         if not data:
-            print("client closed")
-            super.removeThread(sock)
-            sock.close()
+            self.close()
             return False
         try:
             data=data.decode()
@@ -91,4 +92,15 @@ class ClientHandle(Server):
         finally:
             return data
 
+    def removeThread(self):
+        for i in self.threads:
+            if self is i[1]:
+                self.threads.remove(i)
+                    
 
+
+    def close(self):
+        print("client closed")
+        self.sock.close()
+        self.work=False
+        self.removeThread()

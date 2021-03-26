@@ -1,134 +1,111 @@
-from socket import close
+from gui import App
 import tkinter
-import client
+from client import Client
+import threading
+from tkinter import ttk
+from PIL import Image
+from tkinter.filedialog import askopenfilename
+from PIL import ImageTk
+from PIL import Image
+import re
 
 
-class App():
+def SendMessage(app, client,message_TextBox,message):
+    if type(message)==tkinter.StringVar:
+        message=message.get()
+    mes=re.search("([\s\S]*?): ([\s\S]*)", message)
+    if mes.group(1)=="message" or mes.group(1)=="image":
+        app.AddMessage(message_TextBox,":tom",["Name","rtl"])
+        app.AddMessage(message_TextBox,"\n","rtl")
 
-    def __init__(self):
-        self.window=None
-        self.frame=[]
-        self.StringVar=[]
-        self.ScrollBar=[]
-        self.ListBox=[]
-        self.label=[]
-        self.button=[]
-        self.entry=[]
-        self.sock=client.Client("127.0.0.1",2222)
-        self.sock.Connect()
+        if mes.group(1)=="image":
+            app.AddMessage(message_TextBox,bytes(mes.group(2),'latin-1'),500)
+        else:
+            app.AddMessage(message_TextBox,mes.group(2)+"  ","rtl")
+        app.AddMessage(message_TextBox,"\n\n","rtl")
+    else:
+        app.AddMessage(message_TextBox,":tom",["Name","rtl"])
+        app.AddMessage(message_TextBox,"\n","rtl")
+        app.AddMessage(message_TextBox,"sent file"+"  ","rtl")
+        app.AddMessage(message_TextBox,"\n\n","rtl")
+    client.Send(message)
+
+    
+    
+def ReceiveMessage(app, client,message_TextBox):
+    message=True
+    while message:
+        message=client.Recieve()
+        message=re.search("([\s\S]*?): ([\s\S]*)",message)
+        if(message.group(1)=="message"):
+            message=message.group(2)
+            print(message)
+            app.AddMessage(message_TextBox,"tom: ","Name")
+            app.AddMessage(message_TextBox,"\n   ","")      
+            app.AddMessage(message_TextBox,message,"")
+            app.AddMessage(message_TextBox,"\n\n","")
+        elif(message.group(1)=="image"):
+            app.AddMessage(message_TextBox,"tom: ","Name")
+            app.AddMessage(message_TextBox,"\n   ","")      
+            message=bytes(message.group(2),'latin-1')
+            app.AddMessage(message_TextBox,message,35)
+            app.AddMessage(message_TextBox,"\n\n","")
+
+        elif(message.group(1)=="file"):
+            message=re.search("([\s\S]*?): ([\s\S]*) (.*)",message.group(0))
+            file=open(rf"files\{message.group(2)}","wb")
+            file.write(bytes(message.group(3),"latin-1"))
+            file.close()
+            app.AddMessage(message_TextBox,"tom: ","Name")
+            app.AddMessage(message_TextBox,"\n   ","")
+            app.AddMessage(message_TextBox,f"sent file: {message.group(2)}","")
+            app.AddMessage(message_TextBox,"\n\n","")
 
 
-    def CreateWindow(self,title="client", size="300x200"):
 
-        self.window=tkinter.Tk()
-        self.window.title(title)
-        self.window.geometry(size)
-        self.window.protocol("WM_DELETE_WINDOW", self.onClose)
+def getImage(app,client,message_TextBox):
+    fileName = askopenfilename(title = "Select file",filetypes = (("jpeg files","*.jpg *.png"),))
+    if fileName=="":
+        return
 
+    file=open(fileName,"rb")
+    content=file.read()
+    file.close()
+    SendMessage(app,client,message_TextBox,"image: "+content.decode('latin-1'))
 
-    def CreateFrame(self):
-        frame=tkinter.Frame(self.window)
-        frame.pack()
-        self.frame.append(frame)
-        return frame
-
-    def CreateStringVar(self):
-        message = tkinter.StringVar()
-        self.StringVar.append(message)
-        return message
-
-    def CreateScrollBar(self,frame,side,direction,orient):
-        scrollbar = tkinter.Scrollbar(frame,orient=orient)
-        scrollbar.pack(side=side, fill=direction)
-        self.ScrollBar.append(scrollbar)
-        return scrollbar
-
-    def CreateListBox(self,frame,height,width,yscrollbar,xscrollbar):
-        ListBox=tkinter.Listbox(frame,height=height,width=width,yscrollcommand=yscrollbar.set, xscrollcommand=xscrollbar.set)
-        ListBox.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
-        self.ListBox.append(ListBox)
-        return ListBox
-
-    def CreateLabel(self,text,pady):
-        lblNum = tkinter.Label(self.window, text=text)
-        lblNum.pack(pady=pady)
-        self.label.append(lblNum)
-        return lblNum
-
-    def CreateButton(self,frame,text,width,cmd,color):
-        btnClick = tkinter.Button(frame, text = text, width = width, command=cmd, bg=color)
-        btnClick.pack(padx=10, pady=20,side=tkinter.LEFT)
-        self.button.append(btnClick)
-        return btnClick
-
-    def CreateEntry(self,frame,stringvar):
-        entry=tkinter.Entry(frame,textvariable=stringvar)
-        entry.pack()
-        self.entry.append(entry)
-        return entry
-
-    def bind(self,widget,event,handler):
-        widget.bind(event,handler)
-
-    def config(self,widget,cmd):
-        widget.config(command=cmd)
-
-    def send(self,code,ListBox,message):
-        if type(message)!=str:
-            message=message.get()
-
-        if code==4:
-            self.onClose()
-
-        self.sock.SendToServer(self.sock.Message(code,message))
-        recieve=self.sock.RecieveMessage()
-        
-        if code==3:
-            ListBox.insert(tkinter.END, ("File saved - "+message.split('\\')[-1]))
-
-            
-            
-        ListBox.insert(tkinter.END,recieve)
-        self.StringVar[0].set("")
-        
-    def onClose(self):
-        self.sock.SendToServer(self.sock.Message(4,"quit"))
-        self.sock.Close()
-        self.window.quit()
-        exit()
-
-    def mainloop(self):
-        self.window.mainloop()
 
 
 def main():
-
-    app=App()
-    app.CreateWindow(size="600x550")
+    client=Client()
+    client.connect()
+    app=App(client.close)
+    window=app.CreateWindow(size="700x550")
 
     msg_frame=app.CreateFrame()
 
-    y_scrollbar=app.CreateScrollBar(msg_frame,tkinter.RIGHT,tkinter.Y,"vertical")
-    x_scrollbar=app.CreateScrollBar(msg_frame,tkinter.BOTTOM,tkinter.X,"horizontal")
+    y_scrollbar=app.CreateScrollBar(msg_frame,0,1,tkinter.VERTICAL)
+    #x_scrollbar=app.CreateScrollBar(msg_frame,1,0,tkinter.HORIZONTAL)
     message=app.CreateStringVar()
-    message_ListBox=app.CreateListBox(msg_frame,20,80,y_scrollbar,x_scrollbar)
-
+    message_TextBox=app.CreateTextBox(msg_frame,0,0,tkinter.NS,y_scrollbar)
+    message_TextBox.tag_config('Name', foreground="red")
+    message_TextBox.tag_config('rtl', justify='right')
     Button_frame=app.CreateFrame()
 
     entry=app.CreateEntry(Button_frame,message)
+     
+    SendImg_btn=app.CreateButton(Button_frame,"send Image",15,lambda:getImage(app,client,message_TextBox),"red")
+    app.bind(entry, "<Return>", lambda args: SendMessage(app,client,message_TextBox,"message: "+message.get()) if message.get()!="" else None )
     
-    app.bind(entry, "<Return>", lambda event: app.send(1,message_ListBox,message))
-    
-    app.CreateButton(Button_frame,"send",10,lambda : app.send(1,message_ListBox,message), "red")
-    app.CreateButton(Button_frame,"get list of files",10,lambda : app.send(2,message_ListBox,message),"light blue")
-    app.CreateButton(Button_frame,"download files",10,lambda : app.send(3,message_ListBox,message),"green")
-    app.CreateButton(Button_frame,"quit",10,lambda : app.send(4,message_ListBox,"quit"),"white")
-    app.config(y_scrollbar,message_ListBox.yview)
-    app.config(x_scrollbar,message_ListBox.xview)
-
-
-
-
+    y_scrollbar.configure(command=message_TextBox.yview)
+    message_TextBox.configure(yscrollcommand=y_scrollbar.set)
+    #x_scrollbar.configure(command=message_TextBox.xview)
+    #message_TextBox.configure(xscrollcommand=x_scrollbar.set)
+    app.config(y_scrollbar,message_TextBox.yview)
+    #app.config(x_scrollbar,message_TextBox.xview)
+    thread=threading.Thread(target=ReceiveMessage,args=[app,client,message_TextBox])
+    thread.start()
     app.mainloop()
+
+
 
 main()

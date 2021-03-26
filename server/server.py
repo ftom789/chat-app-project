@@ -11,7 +11,7 @@ class Server():
         self.sock.bind(("0.0.0.0",88))
         self.sock.listen()
         self.threads=[]
-        
+        self.clients=[]
         
 
     def Accept(self,clientFunc):
@@ -20,7 +20,9 @@ class Server():
         clnt=ClientHandle(client,addr,self.threads)
         thread=threading.Thread(target=clientFunc,args=[clnt])
         thread.start()
+        self.clients.append(clnt)
         self.threads.append((thread,clnt))
+        return self.clients
 
     def close(self):
         self.sock.close()
@@ -39,12 +41,20 @@ class ClientHandle():
         
 
     def Send(self,msg):
-        size=str(len(msg))
+        
+        if type(msg)==str:
+            size=str(len(msg.encode("utf-8")))
+        else:
+            size=str(len(msg))
         size="0"*(8-len(size))+size
-        self.sock.send(size.encode())
+        try:
+            self.sock.send(size.encode("utf-8"))
+        except:
+            self.close()
+            return False
         size=len(msg)
         if type(msg)==str:
-            msg=msg.encode()
+            msg=msg.encode("utf-8")
         while size:
             if (size>1024):
                 self.sock.send(msg[:1024])
@@ -57,7 +67,7 @@ class ClientHandle():
     def Recieve(self):
         try:
             data=self.sock.recv(8)
-            size=int(data.decode())
+            size=int(data.decode("utf-8"))
         except:
             self.close()
             return False
@@ -87,7 +97,7 @@ class ClientHandle():
             self.close()
             return False
         try:
-            data=data.decode()
+            data=data.decode("utf-8")
             pass
         finally:
             return data

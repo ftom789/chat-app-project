@@ -2,7 +2,9 @@ import tkinter
 from tkinter import ttk
 import io
 from PIL import ImageTk
-from PIL import Image
+from PIL import Image,ImageFile
+
+ImageFile.LOAD_TRUNCATED_IMAGES=True
 
 class App():
 
@@ -38,6 +40,7 @@ class App():
     def CreateTextBox(self,frame,column,row,sticky,yscrollbar):
         text=tkinter.Text(frame,yscrollcommand=yscrollbar.set)
         text.grid(column=column, row=row, sticky=sticky)
+        text.configure(state='disabled')
         return text
 
     def CreateStringVar(self):
@@ -95,7 +98,7 @@ class App():
         widget.config(command=cmd)
 
     def AddMessage(self,TextBox,message,tag):
-        
+        TextBox.configure(state='normal')
         if type(message)==tuple and type(message[1])!=str:
             message[1]=message[1].get() 
         elif type(message)==tkinter.StringVar:
@@ -113,7 +116,7 @@ class App():
             TextBox.image_create(tkinter.END,image=self.photos[-1],padx=tag)
 
         TextBox.see("end")
-
+        TextBox.configure(state='disabled')
         self.StringVar[0].set("")
         
     def onClose(self):

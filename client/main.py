@@ -2,13 +2,9 @@ from gui import App
 import tkinter
 from client import Client
 import threading
-from tkinter import ttk
-from PIL import Image
 from tkinter.filedialog import askopenfilename
-from PIL import ImageTk
-from PIL import Image
 import re
-
+import os
 
 def SendMessage(app, client,message_TextBox,message):
     if type(message)==tkinter.StringVar:
@@ -28,6 +24,7 @@ def SendMessage(app, client,message_TextBox,message):
         app.AddMessage(message_TextBox,"\n","rtl")
         app.AddMessage(message_TextBox,"sent file"+"  ","rtl")
         app.AddMessage(message_TextBox,"\n\n","rtl")
+    
     client.Send(message)
 
     
@@ -36,6 +33,8 @@ def ReceiveMessage(app, client,message_TextBox):
     message=True
     while message:
         message=client.Recieve()
+        if type(message)!=str:
+            continue
         message=re.search("([\s\S]*?): ([\s\S]*)",message)
         if(message.group(1)=="message"):
             message=message.group(2)
@@ -52,7 +51,9 @@ def ReceiveMessage(app, client,message_TextBox):
             app.AddMessage(message_TextBox,"\n\n","")
 
         elif(message.group(1)=="file"):
-            message=re.search("([\s\S]*?): ([\s\S]*) (.*)",message.group(0))
+            message=re.search("([\s\S]*?): ([\s\S]*?)_([\s\S]*)",message.group(0))
+            if not os.path.exists("files"):
+                os.mkdir(os.getcwd()+r"\files")
             file=open(rf"files\{message.group(2)}","wb")
             file.write(bytes(message.group(3),"latin-1"))
             file.close()
@@ -60,7 +61,6 @@ def ReceiveMessage(app, client,message_TextBox):
             app.AddMessage(message_TextBox,"\n   ","")
             app.AddMessage(message_TextBox,f"sent file: {message.group(2)}","")
             app.AddMessage(message_TextBox,"\n\n","")
-
 
 
 def getImage(app,client,message_TextBox):
@@ -73,7 +73,15 @@ def getImage(app,client,message_TextBox):
     file.close()
     SendMessage(app,client,message_TextBox,"image: "+content.decode('latin-1'))
 
+def getFiles(app,client,message_TextBox):
+    fileName = askopenfilename(title = "Select file",filetypes = (("all files","*.*"),))
+    if fileName=="":
+        return
 
+    file=open(fileName,"rb")
+    content=file.read()
+    file.close()
+    SendMessage(app,client,message_TextBox,"file: "+fileName.split('/')[-1]+"_"+content.decode('latin-1'))
 
 def main():
     client=Client()
@@ -93,6 +101,7 @@ def main():
 
     entry=app.CreateEntry(Button_frame,message)
      
+    SendFile_btn=app.CreateButton(Button_frame,"send File",15,lambda:getFiles(app,client,message_TextBox),"red")
     SendImg_btn=app.CreateButton(Button_frame,"send Image",15,lambda:getImage(app,client,message_TextBox),"red")
     app.bind(entry, "<Return>", lambda args: SendMessage(app,client,message_TextBox,"message: "+message.get()) if message.get()!="" else None )
     

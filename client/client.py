@@ -6,7 +6,7 @@ class Client():
     def __init__(self):
         self.sock = socket.socket()
 
-    def connect(self,ip='127.0.0.1',port=88):
+    def connect(self,ip='192.168.0.156',port=88):
         self.sock.connect((ip,port))
 
     def Send(self,msg):
@@ -14,9 +14,9 @@ class Client():
             size=str(len(msg.encode("utf-8")))
         else:
             size=str(len(msg))
-        size="0"*(8-len(size))+size
+        size="0"*(16-len(size))+size
         self.sock.send(size.encode("utf-8"))
-        size=len(msg)
+        size=len(msg.encode("utf-8"))
         if type(msg)==str:
             msg=msg.encode("utf-8")
         while size:
@@ -31,12 +31,12 @@ class Client():
 
     def Recieve(self):
         try:
-            data=self.sock.recv(8)
+            data=self.sock.recv(16)
             size=int(data.decode("utf-8"))
         except:
             self.close()
             return False
-
+#1775619
         if not data:
             self.close()
             return False

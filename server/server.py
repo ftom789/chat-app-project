@@ -2,7 +2,7 @@ import socket
 import datetime
 import os
 import threading
-
+import base64
 
 
 class Server():
@@ -33,11 +33,12 @@ class Server():
 
 class ClientHandle():
     
-    def __init__(self,sock,addr,threads=[]):
+    def __init__(self,sock,addr,threads=[],clients=[]):
         self.sock=sock
         self.work=True
         self.threads=threads
         self.addr=addr
+        self.clients=clients
         
 
     def Send(self,msg):
@@ -46,7 +47,7 @@ class ClientHandle():
             size=str(len(msg.encode("utf-8")))
         else:
             size=str(len(msg))
-        size="0"*(8-len(size))+size
+        size="0"*(16-len(size))+size
         try:
             self.sock.send(size.encode("utf-8"))
         except:
@@ -62,11 +63,11 @@ class ClientHandle():
                 size-=1024
             else:
                 self.sock.send(msg)
-                size=0
+                size=False
 
     def Recieve(self):
         try:
-            data=self.sock.recv(8)
+            data=self.sock.recv(16)
             size=int(data.decode("utf-8"))
         except:
             self.close()
@@ -86,12 +87,14 @@ class ClientHandle():
                     self.close()
                     return False
                 size-=1024
-            else:
+            elif size>0:
                 try:
                     data+=self.sock.recv(size)
                 except:
                     self.close()
                     return False
+                size=0
+            else:
                 size=0
         if not data:
             self.close()
@@ -106,11 +109,14 @@ class ClientHandle():
         for i in self.threads:
             if self is i[1]:
                 self.threads.remove(i)
+        for i in self.clients:
+            if self is i:
+                self.clients.remove(i)
                     
 
 
     def close(self):
-        print("client closed")
+        print(f"{self.addr} client closed")
         self.sock.close()
         self.work=False
         self.removeThread()

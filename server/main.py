@@ -1,10 +1,10 @@
 from server import Server, ClientHandle
-import time
 
 clients=[]
 
 def clientHandle(client):
-    while True:
+    message=True
+    while message:
 
         message=client.Recieve()
         if not message:
@@ -14,7 +14,7 @@ def clientHandle(client):
 
 def sendMessage(client,message):
     for i in clients:
-        if i !=client:
+        if i !=client and i.work:
             print(f"send to {i.addr}")
             i.Send(message)
 

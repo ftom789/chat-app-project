@@ -35,6 +35,7 @@ class Client():
             size=int(data.decode("utf-8"))
         except:
             self.close()
+            Exception("size need to be an integer")
             return False
 #1775619
         if not data:
@@ -49,6 +50,7 @@ class Client():
                     data+=self.sock.recv(1024)
                 except:
                     self.close()
+                    Exception("recieve does not work")
                     return False
                 size-=1024
             else:
@@ -60,6 +62,7 @@ class Client():
                 size=0
         if not data:
             self.close()
+            Exception("no data")
             return False
         try:
             data=data.decode("utf-8")
@@ -71,4 +74,3 @@ class Client():
         print("client closed")
         self.sock.close()
         self.work=False
-        exit()

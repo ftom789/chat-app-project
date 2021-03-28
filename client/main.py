@@ -5,6 +5,8 @@ import threading
 from tkinter.filedialog import askopenfilename
 import re
 import os
+import playsound
+import voicechat
 
 def SendMessage(app, client,message_TextBox,message):
     if type(message)==tkinter.StringVar:
@@ -33,6 +35,7 @@ def ReceiveMessage(app, client,message_TextBox):
     message=True
     while message:
         message=client.Recieve()
+        playsound.playsound("https://www.myinstants.com/media/sounds/discord-notification.mp3",block=False)
         if type(message)!=str:
             continue
         message=re.search("([\s\S]*?): ([\s\S]*)",message)
@@ -43,6 +46,7 @@ def ReceiveMessage(app, client,message_TextBox):
             app.AddMessage(message_TextBox,"\n   ","")      
             app.AddMessage(message_TextBox,message,"")
             app.AddMessage(message_TextBox,"\n\n","")
+
         elif(message.group(1)=="image"):
             app.AddMessage(message_TextBox,"tom: ","Name")
             app.AddMessage(message_TextBox,"\n   ","")      
@@ -51,7 +55,7 @@ def ReceiveMessage(app, client,message_TextBox):
             app.AddMessage(message_TextBox,"\n\n","")
 
         elif(message.group(1)=="file"):
-            message=re.search("([\s\S]*?): ([\s\S]*?)_([\s\S]*)",message.group(0))
+            message=re.search(r"([\s\S]*?): ([\s\S]*?)\\([\s\S]*)",message.group(0))
             if not os.path.exists("files"):
                 os.mkdir(os.getcwd()+r"\files")
             file=open(rf"files\{message.group(2)}","wb")
@@ -63,27 +67,52 @@ def ReceiveMessage(app, client,message_TextBox):
             app.AddMessage(message_TextBox,"\n\n","")
 
 
-def getImage(app,client,message_TextBox):
-    fileName = askopenfilename(title = "Select file",filetypes = (("jpeg files","*.jpg *.png"),))
+
+
+def getFile(filetypes):
+    fileName = askopenfilename(title = "Select file",filetypes = filetypes)
     if fileName=="":
-        return
+        return None
 
     file=open(fileName,"rb")
     content=file.read()
     file.close()
-    SendMessage(app,client,message_TextBox,"image: "+content.decode('latin-1'))
+    return (fileName,content)
+
+def getImage(app,client,message_TextBox):
+    file=getFile((("jpeg files","*.jpg *.png"),))
+    if file!=None:
+        fileName,content=file
+        SendMessage(app,client,message_TextBox,"image: "+content.decode('latin-1'))
 
 def getFiles(app,client,message_TextBox):
-    fileName = askopenfilename(title = "Select file",filetypes = (("all files","*.*"),))
-    if fileName=="":
-        return
+    file=getFile((("all files","*.*"),))
+    if file!=None:
+        fileName,content=file
+        SendMessage(app,client,message_TextBox,"file: "+fileName.split('/')[-1]+"\\"+content.decode('latin-1'))
 
-    file=open(fileName,"rb")
-    content=file.read()
-    file.close()
-    SendMessage(app,client,message_TextBox,"file: "+fileName.split('/')[-1]+"_"+content.decode('latin-1'))
 
+deafen=True
+
+def Changedeafen():
+    global deafen
+    deafen=not deafen
+    print(deafen)
+
+def SendVoice():
+    while True:
+        if not deafen:
+            voicechat.Send()
+def ReceiveVoice():
+    while True:
+        if not deafen:
+
+            voicechat.Recieve()
+
+
+first=True
 def main():
+    global first
     client=Client()
     client.connect()
     app=App(client.close)
@@ -103,6 +132,7 @@ def main():
      
     SendFile_btn=app.CreateButton(Button_frame,"send File",15,lambda:getFiles(app,client,message_TextBox),"red")
     SendImg_btn=app.CreateButton(Button_frame,"send Image",15,lambda:getImage(app,client,message_TextBox),"red")
+    deafen_btn=app.CreateButton(Button_frame,"deafen",15,lambda:Changedeafen(),"red")
     app.bind(entry, "<Return>", lambda args: SendMessage(app,client,message_TextBox,"message: "+message.get()) if message.get()!="" else None )
     
     y_scrollbar.configure(command=message_TextBox.yview)
@@ -110,9 +140,16 @@ def main():
     #x_scrollbar.configure(command=message_TextBox.xview)
     #message_TextBox.configure(xscrollcommand=x_scrollbar.set)
     app.config(y_scrollbar,message_TextBox.yview)
+    
     #app.config(x_scrollbar,message_TextBox.xview)
-    thread=threading.Thread(target=ReceiveMessage,args=[app,client,message_TextBox])
-    thread.start()
+    recvmessage=threading.Thread(target=ReceiveMessage,args=[app,client,message_TextBox])
+    sendvoice=threading.Thread(target=SendVoice,args=[])
+    receivevoice=threading.Thread(target=ReceiveVoice,args=[])
+    recvmessage.start()
+    sendvoice.start()
+    receivevoice.start()
+        #first=True
+    first=False
     app.mainloop()
 
 

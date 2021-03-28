@@ -47,33 +47,56 @@ class ClientHandle():
             size=str(len(msg.encode("utf-8")))
         else:
             size=str(len(msg))
+        print(f"size is {size}")
         size="0"*(16-len(size))+size
         try:
             self.sock.send(size.encode("utf-8"))
         except:
             self.close()
             return False
-        size=len(msg)
+        if type(msg)==str:
+            size=len(msg.encode("utf-8"))
+        else:
+            size=len(msg)
+
+        print(f"size is {size}")
+
         if type(msg)==str:
             msg=msg.encode("utf-8")
+        counter=0
+        sz=0
+        file=open("log.txt","w")
+        file.write(str(msg))
+        file.close()
         while size:
             if (size>1024):
                 self.sock.send(msg[:1024])
+                sz+=len(msg[:1024])
                 msg=msg[1024:]    
                 size-=1024
+                
             else:
                 self.sock.send(msg)
+                sz+=len(msg)
+                print(f"last packet sent - {len(msg)}")
+                print(f"last packet sent content - {msg}")
                 size=False
-
+            counter+=1
+        print(counter)
+        print(f"whole packets sent - {sz}")
+        
     def Recieve(self):
         try:
             data=self.sock.recv(16)
             size=int(data.decode("utf-8"))
         except:
             self.close()
+            print(data)
+            print("size need to be an integer")
             return False
 
         if not data:
+            print("nothing has benn sent")
             self.close()
             return False
         
@@ -82,22 +105,28 @@ class ClientHandle():
         while size:
             if (size>1024):
                 try:
-                    data+=self.sock.recv(1024)
+                    data2=self.sock.recv(1024)
+                    data+=data2
+                    size-=len(data2)
                 except:
                     self.close()
+                    print("recieve does not work")
+
                     return False
-                size-=1024
+                
             elif size>0:
                 try:
                     data+=self.sock.recv(size)
                 except:
                     self.close()
+                    print("recieve does not work")
                     return False
                 size=0
             else:
                 size=0
         if not data:
             self.close()
+            print("no data")
             return False
         try:
             data=data.decode("utf-8")

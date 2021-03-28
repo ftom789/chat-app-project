@@ -1,6 +1,9 @@
 from server import Server, ClientHandle
 
+
 clients=[]
+
+
 
 def clientHandle(client):
     message=True

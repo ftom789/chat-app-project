@@ -2,6 +2,7 @@ import socket
 import datetime
 import os
 
+
 class Client():
     def __init__(self):
         self.sock = socket.socket()
@@ -14,11 +15,18 @@ class Client():
             size=str(len(msg.encode("utf-8")))
         else:
             size=str(len(msg))
+        print(f"size is {size}")
         size="0"*(16-len(size))+size
         self.sock.send(size.encode("utf-8"))
-        size=len(msg.encode("utf-8"))
+        
+        if type(msg)==str:
+            size=len(msg.encode("utf-8"))
+        else:
+            size=len(msg)
+        print(f"size is {size}")
         if type(msg)==str:
             msg=msg.encode("utf-8")
+        counter=0
         while size:
             if (size>1024):
                 self.sock.send(msg[:1024])
@@ -26,19 +34,25 @@ class Client():
                 size-=1024
             else:
                 self.sock.send(msg)
+                print(size)
                 size=0
-    
+                
+            counter+=1
+        print(counter)
 
     def Recieve(self):
         try:
             data=self.sock.recv(16)
             size=int(data.decode("utf-8"))
+            print(f"size is {size}")
         except:
             self.close()
-            Exception("size need to be an integer")
+            print(data)
+            print("size need to be an integer")
             return False
 #1775619
         if not data:
+            print("nothing has benn sent")
             self.close()
             return False
         
@@ -47,12 +61,14 @@ class Client():
         while size:
             if (size>1024):
                 try:
-                    data+=self.sock.recv(1024)
+                    data2=self.sock.recv(1024)
+                    size-=len(data2)
+                    data+=data2
                 except:
                     self.close()
-                    Exception("recieve does not work")
+                    print("recieve does not work")
                     return False
-                size-=1024
+                
             else:
                 try:
                     data+=self.sock.recv(size)
@@ -62,7 +78,7 @@ class Client():
                 size=0
         if not data:
             self.close()
-            Exception("no data")
+            print("no data")
             return False
         try:
             data=data.decode("utf-8")
@@ -74,3 +90,21 @@ class Client():
         print("client closed")
         self.sock.close()
         self.work=False
+    
+
+class Udp():
+    def __init__(self,addr):
+        self.addr=addr
+        self.sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+        
+    def Send(self,data):
+        print(len(data))
+        self.sock.sendto(data,self.addr)
+
+    def Recieve(self):
+        data=self.sock.recvfrom(1024)
+        return data
+        
+    def close(self):
+        self.sock.close()
+            

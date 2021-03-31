@@ -70,7 +70,7 @@ def ReceiveMessage(app, client,message_TextBox):
 
 
 def getFile(filetypes):
-    fileName = askopenfilename(title = "Select file",filetypes = filetypes)
+    fileName = askopenfilename(title = "Select file",filetypes = filetypes) #open the file system and asking the user to selecrt a file a file
     if fileName=="":
         return None
 

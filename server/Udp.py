@@ -29,6 +29,7 @@ class Server():
         if (addr not in self.clients):
             print(f"new client {addr}")
             self.clients.append(addr)
+            return None
         return data,addr
 
   

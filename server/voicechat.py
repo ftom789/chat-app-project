@@ -5,7 +5,7 @@ server=Server()
 def sendToAll(data,addr):
     for i in server.clients:
         if i != addr:
-            print(f"{i} {addr}")
+            #print(f"{i} {addr}")
             server.Send(data,i)
 
 while True:

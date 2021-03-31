@@ -7,25 +7,29 @@ channels = 1
 rate = 20000
 audio_format = pyaudio.paInt16
 audio=pyaudio.PyAudio()
-recording_stream = audio.open(format=audio_format, channels=channels, rate=rate, input=True, frames_per_buffer=chunk_size)
+recording_stream = audio.open(format=audio_format, channels=channels, rate=rate, input=True, frames_per_buffer=chunk_size) 
 playing_stream = audio.open(format=audio_format, channels=channels, rate=rate, output=True, frames_per_buffer=chunk_size)
 
-client=Udp(("127.0.0.1",89))
-client.Send("h".encode())
+client=Udp(("192.168.0.156",89))
+
+def connect():
+    client.Send("h".encode())
+
 def RecordAudio():
-    data = recording_stream.read(512)
+    data = recording_stream.read(512) #recording
     return data
     
 
 def PlayAudio(data):
-    playing_stream.write(data)
+    playing_stream.write(data) #playing
 
 def Send():
-    print("sent")
     data=RecordAudio()
-    client.Send(data)
+    client.Send(data) #send the record
 
 def Recieve():
-    print("recieved")
     data,addr=client.Recieve()
-    PlayAudio(data)
+    PlayAudio(data) #play the record
+
+def Close():
+    client.close()

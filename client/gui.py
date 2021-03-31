@@ -4,6 +4,7 @@ import io
 from PIL import ImageTk
 from PIL import Image,ImageFile
 
+
 ImageFile.LOAD_TRUNCATED_IMAGES=True
 
 class App():
@@ -22,23 +23,60 @@ class App():
         self.close=close
 
 
-    def CreateWindow(self,title="client", size="300x200"):
+    def CreateWindow(self,title="client", size="300x200",**kwargs):
 
-        self.window=tkinter.Tk()
+        self.window=tkinter.Tk(**kwargs)
         self.window.title(title)
         self.window.geometry(size)
+        self.window.resizable(True,True)
         self.window.protocol("WM_DELETE_WINDOW", self.onClose)
         return self.window
 
 
-    def CreateFrame(self):
-        frame=tkinter.Frame(self.window)
-        frame.pack()
+    def CreateFrame(self,**kwargs):
+        frame=tkinter.Frame(self.window,**kwargs)
+        
         self.frame.append(frame)
         return frame
 
-    def CreateTextBox(self,frame,column,row,sticky,yscrollbar):
-        text=tkinter.Text(frame,yscrollcommand=yscrollbar.set)
+    def pack(self,widget,**kwargs):
+        widget.pack(**kwargs)
+
+    def CreateTitleBar(self,frame,button):
+        #self.window.update_idletasks()
+        self.window.overrideredirect(True)
+        title_bar = self.CreateFrame(**frame)
+        title_bar.pack(expand=1,fill=tkinter.X)
+        def get_pos(event):
+            xwin = self.window.winfo_x()
+            ywin = self.window.winfo_y()
+            startx = event.x_root
+            starty = event.y_root
+
+            ywin = ywin - starty
+            xwin = xwin - startx
+
+
+            def move_window(event):
+                self.window.geometry(f"{self.window.winfo_width()}x{self.window.winfo_height()}" + '+{0}+{1}'.format(event.x_root + xwin, event.y_root + ywin))
+            startx = event.x_root
+            starty = event.y_root
+            title_bar.bind('<B1-Motion>', move_window)
+        title_bar.bind('<B1-Motion>', get_pos)
+        width,height=self.window.maxsize()
+        maxsize_button=self.CreateButton(title_bar,text="🗖",command=lambda:self.window.geometry(f"{width}x{height}+0+0"),**button)
+        close_button = self.CreateButton(title_bar,text="X",command=self.window.destroy,**button)
+        close_button.pack(side=tkinter.RIGHT)
+        maxsize_button.pack(side=tkinter.RIGHT)
+        return title_bar,close_button
+
+    def resize(self,widget, event):
+        w,h = event.width-1, event.height-1
+        print(w,h)
+        widget.config(width=w, height=h)
+
+    def CreateTextBox(self,frame,column,row,sticky,yscrollbar,**kwargs):
+        text=tkinter.Text(frame,yscrollcommand=yscrollbar.set,**kwargs)
         text.grid(column=column, row=row, sticky=sticky)
         text.configure(state='disabled')
         return text
@@ -79,9 +117,9 @@ class App():
         self.label.append(lblNum)
         return lblNum
 
-    def CreateButton(self,frame,text,width,cmd,color):
-        btnClick = tkinter.Button(frame, text = text, width = width, command=cmd, bg=color)
-        btnClick.pack(padx=10, pady=20,side=tkinter.LEFT)
+    def CreateButton(self,frame,**kwargs):
+        
+        btnClick = tkinter.Button(frame,**kwargs)
         self.button.append(btnClick)
         return btnClick
 
@@ -98,7 +136,8 @@ class App():
         widget.config(command=cmd)
 
     def AddMessage(self,TextBox,message,tag):
-        TextBox.configure(state='normal')
+        #append message to the textBox
+        TextBox.configure(state='normal') #change the state to normal means that anyone can write to the textBox
         if type(message)==tuple and type(message[1])!=str:
             message[1]=message[1].get() 
         elif type(message)==tkinter.StringVar:
@@ -109,20 +148,32 @@ class App():
 
         elif type(message)==bytes:
             
-            photo=Image.open(io.BytesIO(message))
-            photo=photo.resize((128,96),Image.ANTIALIAS)
-            photo=ImageTk.PhotoImage(photo)
-            self.photos.append(photo)
+            photo=Image.open(io.BytesIO(message)) #open the photo
+            photo=photo.resize((128,96),Image.ANTIALIAS) #resize the photo
+            photo=ImageTk.PhotoImage(photo) #convert the photo to tkinter format
+            self.photos.append(photo) #append the photo to the list of photos to save in memory
             TextBox.image_create(tkinter.END,image=self.photos[-1],padx=tag)
 
-        TextBox.see("end")
-        TextBox.configure(state='disabled')
+        TextBox.see("end") #scroll to the end of the textBox
+        TextBox.configure(state='disabled') #change the state to disabled means that no one can write to the textBox
         self.StringVar[0].set("")
         
+    def background(self,color):
+        self.window.configure(background=color)
+        for i in self.frame:
+            i.configure(background=color)
+        for i in self.button:
+            i.configure(background=color)
+
+
     def onClose(self):
-        self.close()
-        exit()
+        #close the sockets and exit
+        for i in self.close:
+            i()
         self.window.quit()
+        exit()
+
+        
         
 
     def mainloop(self):

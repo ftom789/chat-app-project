@@ -17,7 +17,7 @@ class Server():
     def Accept(self,clientFunc):
         client,addr=self.sock.accept()
         print(f"new client {addr}")
-        clnt=ClientHandle(client,addr,self.threads)
+        clnt=ClientHandle(client,addr,self.threads,self.clients)
         thread=threading.Thread(target=clientFunc,args=[clnt])
         thread.start()
         self.clients.append(clnt)
@@ -39,7 +39,7 @@ class ClientHandle():
         self.threads=threads
         self.addr=addr
         self.clients=clients
-        
+        pass
 
     def Send(self,msg):
         
@@ -91,7 +91,6 @@ class ClientHandle():
             size=int(data.decode("utf-8"))
         except:
             self.close()
-            print(data)
             print("size need to be an integer")
             return False
 
@@ -136,10 +135,10 @@ class ClientHandle():
 
     def removeThread(self):
         for i in self.threads:
-            if self is i[1]:
+            if self == i[1]:
                 self.threads.remove(i)
         for i in self.clients:
-            if self is i:
+            if self == i:
                 self.clients.remove(i)
                     
 

@@ -163,6 +163,7 @@ def main():
     Button_frame.pack(expand=True)
 
     entry=app.CreateEntry(Button_frame,message)
+    entry.pack()
     entry.configure(background="#36393f",fg="#dcddde")
 
     imageImg=tkinter.PhotoImage(file="resource\\image.png")

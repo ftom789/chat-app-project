@@ -124,7 +124,6 @@ class App():
 
     def CreateEntry(self,frame,stringvar):
         entry=tkinter.Entry(frame,textvariable=stringvar,width=50)
-        entry.pack()
         self.entry.append(entry)
         return entry
 

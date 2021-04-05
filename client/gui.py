@@ -111,9 +111,8 @@ class App():
         self.TreeView.append(tree)
         return tree
 
-    def CreateLabel(self,text,pady):
-        lblNum = tkinter.Label(self.window, text=text)
-        lblNum.pack(pady=pady)
+    def CreateLabel(self,text,**kwargs):
+        lblNum = tkinter.Label(self.window, text=text,**kwargs)
         self.label.append(lblNum)
         return lblNum
 

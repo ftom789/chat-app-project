@@ -15,13 +15,10 @@ user_entry= app.CreateEntry(loging,stringvar_user)
 user_entry.grid(row=1,column=1)  
 pass_entry= app.CreateEntry(loging,stringvar_pass)
 pass_entry.grid(row=2,column=1)  
-login_butten=app.CreateButton(loging, text="Log in", bg= "blue")
+login_butten=app.CreateButton(loging, text="Log in", bg= "cyan")
 signup_butten=app.CreateButton(loging, text= "sign up", bg= "yellow")
 login_butten.grid(row=3,column=0)
 signup_butten.grid(row=3,column=1)
-
-
-
 
 
 

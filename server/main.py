@@ -10,7 +10,6 @@ def msgServer():
     def clientHandle(client):
         message=True
         while message:
-
             message=client.Recieve()
             if not message:
                 break
@@ -30,6 +29,7 @@ def msgServer():
                     else:
                         client.Send("not accepted:username not exist")
                 elif action=="signup": 
+                    
 
 
 

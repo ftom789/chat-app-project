@@ -29,7 +29,7 @@ def SendMessage(app, client,message_TextBox,message):
         app.AddMessage(message_TextBox,f"sent file: {mes.group(3)}"+"  ",["rtl","message"])
         app.AddMessage(message_TextBox,"\n\n","rtl")
     
-    client.Send(message)
+    client.Send("mes:"+message)
 
     
     

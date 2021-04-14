@@ -13,9 +13,9 @@ def msgServer():
             message=client.Recieve()
             if not message:
                 break
-            message=re.search("(.*):([\s\S]*)",message)
-            if message.group(1)=="mes":
-                message=message.group(2)
+            #message=re.search("(.*):([\s\S]*)",message)
+            if True or message.group(1)=="mes" :
+                #message=message.group(2)
                 print(f"{client.addr} {message}")
                 sendMessage(client,message)
             elif message.group(1)=="acc":
@@ -29,6 +29,7 @@ def msgServer():
                     else:
                         client.Send("not accepted:username not exist")
                 elif action=="signup": 
+                    pass
                     
 
 

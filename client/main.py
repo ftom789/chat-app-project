@@ -7,29 +7,36 @@ import re
 import os
 import playsound
 import voicechat
+import json
+
 
 def SendMessage(app, client,message_TextBox,message):
     if type(message)==tkinter.StringVar:
         message=message.get()
-    message="tom2 "+message
-    mes=re.search("([\s\S]*?) ([\s\S]*?): ([\s\S]*)", message)
-    if mes.group(2)=="message" or mes.group(2)=="image":
-        app.AddMessage(message_TextBox,f":{mes.group(1)}",["Name","rtl"])
+    name="ftom789"
+    #mes=re.search("([\s\S]*?) ([\s\S]*?): ([\s\S]*)", message)
+    if message["type"]=="text" or message["type"]=="image":
+        app.AddMessage(message_TextBox,f":{name}",["Name","rtl"])
         app.AddMessage(message_TextBox,"\n","rtl")
-
-        if mes.group(2)=="image":
-            app.AddMessage(message_TextBox,bytes(mes.group(3),'latin-1'),500)
+        if message["type"]=="image":
+            app.AddMessage(message_TextBox,bytes(message["content"],'latin-1'),500)
         else:
-            app.AddMessage(message_TextBox,mes.group(3)+"  ",["rtl","message"])
+            app.AddMessage(message_TextBox,message["content"]+"  ",["rtl","message"])
         app.AddMessage(message_TextBox,"\n\n","rtl")
     else:
-        mes=re.search(r"([\s\S]*?) ([\s\S]*?): ([\s\S]*?)\\([\s\S]*)",message)
-        app.AddMessage(message_TextBox,f"{mes.group(1)}: ",["Name","rtl"])
+        app.AddMessage(message_TextBox,f":{name}",["Name","rtl"])
         app.AddMessage(message_TextBox,"\n","rtl")
-        app.AddMessage(message_TextBox,f"sent file: {mes.group(3)}"+"  ",["rtl","message"])
+        app.AddMessage(message_TextBox,f"sent file: {message['fileName']}"+"  ",["rtl","message"])
         app.AddMessage(message_TextBox,"\n\n","rtl")
+    message["name"]="ftom789"
+    message={
+        "type": "message", #message or account
+        "content": message
+    }
     
-    client.Send("mes:"+message)
+    message=json.dumps(message)
+    #print(message)
+    client.Send(message)
 
     
     
@@ -40,37 +47,38 @@ def ReceiveMessage(app, client,message_TextBox):
         if not message:
             message=False
             break
-        playsound.playsound("https://www.myinstants.com/media/sounds/discord-notification.mp3",block=False) #play sound if recieved message
         if type(message)!=str:
             continue
-        message=re.search("([\s\S]*?) ([\s\S]*?): ([\s\S]*)", message)
+        playsound.playsound("https://www.myinstants.com/media/sounds/discord-notification.mp3",block=False) #play sound if recieved message
+        message=json.loads(message)
+        if message["type"]=="message":
+            message=message["content"]
         #check the message
-        if(message.group(2)=="message"):
-            
-            #print(message)
-            app.AddMessage(message_TextBox,f"{message.group(1)}: ","Name")
-            app.AddMessage(message_TextBox,"\n   ","")      
-            app.AddMessage(message_TextBox,message.group(3),"message")
-            app.AddMessage(message_TextBox,"\n\n","")
+            if(message["type"]=="text"):
+                #print(message)
+                app.AddMessage(message_TextBox,f"{message['name']}: ","Name")
+                app.AddMessage(message_TextBox,"\n   ","")      
+                app.AddMessage(message_TextBox,message["content"],"message")
+                app.AddMessage(message_TextBox,"\n\n","")
 
-        elif(message.group(2)=="image"):
-            app.AddMessage(message_TextBox,f"{message.group(1)}: ","Name")
-            app.AddMessage(message_TextBox,"\n   ","")      
-            message=bytes(message.group(3),'latin-1')
-            app.AddMessage(message_TextBox,message,35)
-            app.AddMessage(message_TextBox,"\n\n","")
+            elif(message["type"]=="image"):
+                app.AddMessage(message_TextBox,f"{message['name']}: ","Name")
+                app.AddMessage(message_TextBox,"\n   ","")      
+                message=bytes(message["content"],'latin-1')
+                app.AddMessage(message_TextBox,message,35)
+                app.AddMessage(message_TextBox,"\n\n","")
 
-        elif(message.group(2)=="file"):
-            message=re.search(r"([\s\S]*?) ([\s\S]*?): ([\s\S]*?)\\([\s\S]*)",message.group(0))
-            if not os.path.exists("files"):
-                os.mkdir(os.getcwd()+r"\files")
-            file=open(rf"files\{message.group(3)}","wb")
-            file.write(bytes(message.group(4),"latin-1"))
-            file.close()
-            app.AddMessage(message_TextBox,f"{message.group(1)}: ","Name")
-            app.AddMessage(message_TextBox,"\n   ","")
-            app.AddMessage(message_TextBox,f"sent file: {message.group(3)}","message")
-            app.AddMessage(message_TextBox,"\n\n","")
+            elif(message["type"]=="file"):
+                #message=re.search(r"([\s\S]*?) ([\s\S]*?): ([\s\S]*?)\\([\s\S]*)",message.group(0))
+                if not os.path.exists("files"):
+                    os.mkdir(os.getcwd()+r"\files")
+                file=open(rf"files\{message['fileName'].split('/')[-1]}","wb")
+                file.write(bytes(message['content'],"latin-1"))
+                file.close()
+                app.AddMessage(message_TextBox,f"{message['name']}: ","Name")
+                app.AddMessage(message_TextBox,"\n   ","")
+                app.AddMessage(message_TextBox,f"sent file: {message['fileName']}","message")
+                app.AddMessage(message_TextBox,"\n\n","")
 
 
 
@@ -89,13 +97,22 @@ def getImage(app,client,message_TextBox):
     file=getFile((("jpeg files","*.jpg *.png"),))
     if file!=None:
         fileName,content=file
-        SendMessage(app,client,message_TextBox,"image: "+content.decode('latin-1')) #sending image to the server and show the image in the textBox
+        message={
+        "type": "image", #text, image or file  
+        "content": content.decode('latin-1')
+        }
+        SendMessage(app,client,message_TextBox,message) #sending image to the server and show the image in the textBox
 
 def getFiles(app,client,message_TextBox):
     file=getFile((("all files","*.*"),))
     if file!=None:
         fileName,content=file
-        SendMessage(app,client,message_TextBox,"file: "+fileName.split('/')[-1]+"\\"+content.decode('latin-1')) #sending file to the server
+        message={
+        "type": "file", #text, image or file  
+        "fileName": fileName,
+        "content": content.decode("latin-1")
+        }
+        SendMessage(app,client,message_TextBox,message) #sending file to the server
 
 
 deafen=True
@@ -180,7 +197,7 @@ def main():
 
 
     deafen_btn.configure(command=lambda:Changedeafen(deafen_btn,[deafenImg,deafenOffImg]))
-    app.bind(entry, "<Return>", lambda args: SendMessage(app,client,message_TextBox,"message: "+message.get()) if message.get()!="" else None )
+    app.bind(entry, "<Return>", lambda args: SendMessage(app,client,message_TextBox,{"type":"text", "content":message.get()}) if message.get()!="" else None )
     
     y_scrollbar.configure(command=message_TextBox.yview)
     message_TextBox.configure(yscrollcommand=y_scrollbar.set)

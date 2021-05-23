@@ -2,6 +2,7 @@ import socket
 import datetime
 import os
 
+BUFFER_SIZE = 5120
 
 class Client():
     def __init__(self):
@@ -29,10 +30,10 @@ class Client():
             msg=msg.encode("utf-8")
         counter=0
         while size:
-            if (size>1024):
-                self.sock.send(msg[:1024])
-                msg=msg[1024:]    
-                size-=1024
+            if (size>BUFFER_SIZE):
+                self.sock.send(msg[:BUFFER_SIZE])
+                msg=msg[BUFFER_SIZE:]    
+                size-=BUFFER_SIZE
             else:
                 self.sock.send(msg)
                 print(size)
@@ -42,6 +43,7 @@ class Client():
         print(counter)
 
     def Recieve(self):
+        
         try:
             data=self.sock.recv(16)
             size=int(data.decode("utf-8")) #recieve the size of data
@@ -59,9 +61,9 @@ class Client():
         
         data=bytes()
         while size:
-            if (size>1024):
+            if (size>BUFFER_SIZE):
                 try:
-                    data2=self.sock.recv(1024) #collect the data
+                    data2=self.sock.recv(BUFFER_SIZE) #collect the data
                     size-=len(data2)
                     data+=data2
                 except:
@@ -101,7 +103,7 @@ class Udp():
         self.sock.sendto(data,self.addr) #send to the address the data
 
     def Recieve(self):
-        data=self.sock.recvfrom(1024) #recieve data
+        data=self.sock.recvfrom(BUFFER_SIZE) #recieve data
         return data
         
     def close(self):

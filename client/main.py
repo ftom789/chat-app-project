@@ -10,10 +10,11 @@ import voicechat
 import json
 
 
-def SendMessage(app, client,message_TextBox,message):
+
+def SendMessage(app, client,message_TextBox,message,name):
     if type(message)==tkinter.StringVar:
         message=message.get()
-    name="ftom789"
+    
     #mes=re.search("([\s\S]*?) ([\s\S]*?): ([\s\S]*)", message)
     if message["type"]=="text" or message["type"]=="image":
         app.AddMessage(message_TextBox,f":{name}",["Name","rtl"])
@@ -28,7 +29,8 @@ def SendMessage(app, client,message_TextBox,message):
         app.AddMessage(message_TextBox,"\n","rtl")
         app.AddMessage(message_TextBox,f"sent file: {message['fileName']}"+"  ",["rtl","message"])
         app.AddMessage(message_TextBox,"\n\n","rtl")
-    message["name"]="ftom789"
+        
+    message["name"]=name
     message={
         "type": "message", #message or account
         "content": message
@@ -93,7 +95,7 @@ def getFile(filetypes):
     file.close()
     return (fileName,content)
 
-def getImage(app,client,message_TextBox):
+def getImage(app,client,message_TextBox,name):
     file=getFile((("jpeg files","*.jpg *.png"),))
     if file!=None:
         fileName,content=file
@@ -101,9 +103,9 @@ def getImage(app,client,message_TextBox):
         "type": "image", #text, image or file  
         "content": content.decode('latin-1')
         }
-        SendMessage(app,client,message_TextBox,message) #sending image to the server and show the image in the textBox
+        SendMessage(app,client,message_TextBox,message,name) #sending image to the server and show the image in the textBox
 
-def getFiles(app,client,message_TextBox):
+def getFiles(app,client,message_TextBox,name):
     file=getFile((("all files","*.*"),))
     if file!=None:
         fileName,content=file
@@ -112,7 +114,7 @@ def getFiles(app,client,message_TextBox):
         "fileName": fileName,
         "content": content.decode("latin-1")
         }
-        SendMessage(app,client,message_TextBox,message) #sending file to the server
+        SendMessage(app,client,message_TextBox,message,name) #sending file to the server
 
 
 deafen=True
@@ -148,10 +150,9 @@ def close():
     global deafen
     deafen=False
 
-def main():
+def main(client,username):
     global first
-    client=Client()
-    client.connect()
+    
     voicechat.connect()
     app=App([close,client.close,voicechat.Close])
     window=app.CreateWindow(size="700x550+200+200")
@@ -163,16 +164,13 @@ def main():
     
     msg_frame=app.CreateFrame()
     msg_frame.pack(expand=True)
-    
-
-    
 
     y_scrollbar=app.CreateScrollBar(msg_frame,0,1,tkinter.VERTICAL)
     #y_scrollbar.configure(background="#292b2f")
     #x_scrollbar=app.CreateScrollBar(msg_frame,1,0,tkinter.HORIZONTAL)
     message=app.CreateStringVar()
     message_TextBox=app.CreateTextBox(msg_frame,0,0,tkinter.NS,y_scrollbar,bg="#36393f")
-    message_TextBox.tag_config('Name', foreground="white") #tag for name
+    message_TextBox.tag_config('Name', foreground="red") #tag for name
     message_TextBox.tag_config('rtl', justify='right') 
     message_TextBox.tag_config('message', foreground="#dcddde") 
     #message_TextBox.bind('<Configure>',lambda event: app.resize(message_TextBox,event))
@@ -185,9 +183,9 @@ def main():
 
     imageImg=tkinter.PhotoImage(file="resource\\image.png")
     fileImg=tkinter.PhotoImage(file="resource\\file.png")
-    SendFile_btn=app.CreateButton(Button_frame,text="send File",width=48,command=lambda:getFiles(app,client,message_TextBox),image=fileImg,bd=0)
+    SendFile_btn=app.CreateButton(Button_frame,text="send File",width=48,command=lambda:getFiles(app,client,message_TextBox,username),image=fileImg,bd=0)
     SendFile_btn.pack(padx=25, pady=20,side=tkinter.LEFT)
-    SendImg_btn=app.CreateButton(Button_frame,text="send Image",width=48,command=lambda:getImage(app,client,message_TextBox),image=imageImg,bd=0)
+    SendImg_btn=app.CreateButton(Button_frame,text="send Image",width=48,command=lambda:getImage(app,client,message_TextBox,username),image=imageImg,bd=0)
     SendImg_btn.pack(padx=25, pady=20,side=tkinter.LEFT)
     deafenImg=tkinter.PhotoImage(file="resource\\deafen.png")
     deafenOffImg=tkinter.PhotoImage(file="resource\\deafen-off.png")
@@ -197,7 +195,7 @@ def main():
 
 
     deafen_btn.configure(command=lambda:Changedeafen(deafen_btn,[deafenImg,deafenOffImg]))
-    app.bind(entry, "<Return>", lambda args: SendMessage(app,client,message_TextBox,{"type":"text", "content":message.get()}) if message.get()!="" else None )
+    app.bind(entry, "<Return>", lambda args: SendMessage(app,client,message_TextBox,{"type":"text", "content":message.get()},username) if message.get()!="" else None )
     
     y_scrollbar.configure(command=message_TextBox.yview)
     message_TextBox.configure(yscrollcommand=y_scrollbar.set)
@@ -213,5 +211,3 @@ def main():
     app.mainloop()
 
 
-
-main()

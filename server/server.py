@@ -4,6 +4,7 @@ import os
 import threading
 import base64
 
+BUFFER_SIZE = 5120
 
 class Server():
     def __init__(self):
@@ -69,11 +70,11 @@ class ClientHandle():
         file.write(str(msg))
         file.close()
         while size:
-            if (size>1024):
-                self.sock.send(msg[:1024])
-                sz+=len(msg[:1024])
-                msg=msg[1024:]    
-                size-=1024
+            if (size>BUFFER_SIZE):
+                self.sock.send(msg[:BUFFER_SIZE])
+                sz+=len(msg[:BUFFER_SIZE])
+                msg=msg[BUFFER_SIZE:]    
+                size-=BUFFER_SIZE
                 
             else:
                 self.sock.send(msg)
@@ -102,9 +103,9 @@ class ClientHandle():
         
         data=bytes()
         while size:
-            if (size>1024):
+            if (size>BUFFER_SIZE):
                 try:
-                    data2=self.sock.recv(1024)
+                    data2=self.sock.recv(BUFFER_SIZE)
                     data+=data2
                     size-=len(data2)
                 except:

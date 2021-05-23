@@ -1,6 +1,7 @@
 import threading
 import re
 import os
+import json
 
 clients=[]
 
@@ -13,23 +14,69 @@ def msgServer():
             message=client.Recieve()
             if not message:
                 break
+            try:
+                message=json.loads(message)
+            except :
+                raise Exception("Could not convert to json")
+
             #message=re.search("(.*):([\s\S]*)",message)
-            if True or message.group(1)=="mes" :
+            if message["type"]=="message":
                 #message=message.group(2)
                 print(f"{client.addr} {message}")
+                message=json.dumps(message)
                 sendMessage(client,message)
-            elif message.group(1)=="acc":
-                action,username,password=re.search("(.*):([\s\S]*)//([\s\S]*)",message).groups() 
-                if action=="login":
-                    if  os.path.exists(f"accounts\\{username}"):
-                        if open(f"accounts\\{username}\\password.txt","r").read()==password:
-                            client.Send("accepted")
+                continue
+            elif message["type"]=="account":
+                content=message["content"]
+                if content["action"]=="login":
+                    if  os.path.exists(f"accounts\\{content['username']}"):
+                        if open(f"accounts\\{content['username']}\\password.txt","r").read()==content["password"]:
+                            message={
+                                "type":"account",
+                                "isAccepted":True
+                            }
+                            message=json.dumps(message)
+                            client.Send(message)
+                            continue
                         else:
-                            client.Send("not accepted:password is not correct")
+                            message={
+                                "type":"account",
+                                "isAccepted":False,
+                                "reason":"password incorrect"
+                            }
+                            message=json.dumps(message)
+                            client.Send(message)
+                            continue
                     else:
-                        client.Send("not accepted:username not exist")
-                elif action=="signup": 
-                    pass
+                        message={
+                            "type":"account",
+                            "isAccepted":False,
+                            "reason":"username not exist"
+                        }
+                        message=json.dumps(message)
+                        client.Send(message)
+                        continue
+                elif content["action"]=="signup": 
+                    if os.path.exists(f"accounts\\{content['username']}"):
+                        message={
+                            "type":"account",
+                            "isAccepted":False,
+                            "reason":"username already exist"
+                        }
+                        message=json.dumps(message)
+                        client.Send(message)
+                        continue
+                    os.mkdir(f"accounts\\{content['username']}")
+                    file=open(f"accounts\\{content['username']}\\password.txt", "w", encoding="UTF-8")
+                    file.write(content["password"])
+                    file.close()
+                    message={
+                        "type":"account",
+                        "isAccepted":True
+                    }
+                    message=json.dumps(message)
+                    client.Send(message)
+
                     
 
 

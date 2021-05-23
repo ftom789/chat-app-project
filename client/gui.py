@@ -23,9 +23,11 @@ class App():
         self.close=close
 
 
-    def CreateWindow(self,title="client", size="300x200",**kwargs):
-
-        self.window=tkinter.Tk(**kwargs)
+    def CreateWindow(self,tk=True,title="client", size="300x200",**kwargs):
+        if tk:
+            self.window=tkinter.Tk(**kwargs)
+        else:
+            self.window=tkinter.Toplevel(**kwargs)
         self.window.title(title)
         self.window.geometry(size)
         self.window.resizable(True,True)
@@ -165,11 +167,12 @@ class App():
 
 
     def onClose(self):
+        
         #close the sockets and exit
         for i in self.close:
             i()
-        self.window.quit()
-        exit()
+
+        self.window.destroy()
 
         
         

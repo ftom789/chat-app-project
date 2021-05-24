@@ -4,9 +4,11 @@ import os
 import json
 
 clients=[]
+connectedAccounts=[]
+
 
 def msgServer():
-    from server import Server, ClientHandle
+    from Tcp import Server, ClientHandle
     global clients
     def clientHandle(client):
         message=True
@@ -27,7 +29,25 @@ def msgServer():
                 sendMessage(client,message)
                 continue
             elif message["type"]=="account":
+
                 content=message["content"]
+                print(f"username - {content['username']}, accounts - {connectedAccounts}")
+                connected=False
+                for account in connectedAccounts:
+
+                    if account[1]==content['username']:
+                        message={
+                            "type":"account",
+                            "isAccepted":False,
+                            "reason":"user already connected"
+                        }
+                        message=json.dumps(message)
+                        client.Send(message)
+                        connected=True
+                        break
+                if connected:
+                    print("connected")
+                    continue
                 if content["action"]=="login":
                     if  os.path.exists(f"accounts\\{content['username']}"):
                         if open(f"accounts\\{content['username']}\\password.txt","r").read()==content["password"]:
@@ -35,6 +55,7 @@ def msgServer():
                                 "type":"account",
                                 "isAccepted":True
                             }
+                            connectedAccounts.append((client,content['username']))
                             message=json.dumps(message)
                             client.Send(message)
                             continue
@@ -74,12 +95,17 @@ def msgServer():
                         "type":"account",
                         "isAccepted":True
                     }
+                    connectedAccounts.append((client,content['username']))
                     message=json.dumps(message)
                     client.Send(message)
 
                     
 
-
+    def close(client):
+        for account in connectedAccounts:
+            if account[0]==client:
+                connectedAccounts.remove(account)
+                break
 
     def sendMessage(client,message):
         for i in clients:
@@ -87,7 +113,7 @@ def msgServer():
                 print(f"send to {i.addr}")
                 i.Send(message)
 
-    server=Server()
+    server=Server([close])
 
     while True:
         clients=server.Accept(clientHandle)

@@ -155,7 +155,7 @@ def main(client,username):
     
     voicechat.connect()
     app=App([close,client.close,voicechat.Close])
-    window=app.CreateWindow(size="700x550+200+200")
+    window=app.CreateWindow(size="700x550+200+200",title="client - "+username)
     #window.overrideredirect(True)
     #
     #title_bar,close_button = app.CreateTitleBar({"bg":'white', "relief":'raised', "bd":2},{"fg":"white","width":10})
